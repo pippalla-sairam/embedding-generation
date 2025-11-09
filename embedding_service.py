@@ -1,9 +1,17 @@
 from flask import Flask, request, jsonify
 from sentence_transformers import SentenceTransformer
 import numpy as np
+import os
 
 app = Flask(__name__)
-model = SentenceTransformer('all-MiniLM-L6-v2')  # small, fast, accurate
+model = None  # Lazy loading to save memory
+
+def get_model():
+    global model
+    if model is None:
+        # Use a smaller model to prevent memory overflow on Render Free tier
+        model = SentenceTransformer('paraphrase-MiniLM-L3-v2')
+    return model
 
 def normalize(vec):
     vec = np.array(vec)
@@ -19,10 +27,12 @@ def get_embedding():
     if not texts:
         return jsonify({"error": "No texts provided"}), 400
 
-    embeddings = model.encode(texts)  # shape: (n_texts, dim)
+    model_instance = get_model()
+    embeddings = model_instance.encode(texts)
     normalized_embeddings = [normalize(emb) for emb in embeddings]
 
     return jsonify({"embeddings": normalized_embeddings})
 
 if __name__ == '__main__':
-    app.run(port=8000)
+    port = int(os.environ.get("PORT", 8000))
+    app.run(host='0.0.0.0', port=port)
