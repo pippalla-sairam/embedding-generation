@@ -20,6 +20,10 @@ def normalize(vec):
         return vec.tolist()
     return (vec / norm).tolist()
 
+@app.route('/')
+def home():
+    return "Embedding service is running 🚀"
+
 @app.route('/embedding', methods=['POST'])
 def get_embedding():
     data = request.json
